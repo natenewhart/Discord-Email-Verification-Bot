@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-2025-vs2026      # keep whatever label already works for you
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Detect solution and game name
+        shell: pwsh
+        run: |
+          $sln = @(Get-ChildItem -Filter *.sln)
+          if ($sln.Count -ne 1) { throw "Expected exactly one .sln in the repo root, found $($sln.Count)" }
+
+          # Game name: optional repo variable GAME_NAME, otherwise the repo name
+          $name = "${{ vars.GAME_NAME || github.event.repository.name }}"
+          $name = $name -replace '[^A-Za-z0-9_-]+', '-'
+
+          "SOLUTION=$($sln[0].Name)" >> $env:GITHUB_ENV
+          "GAME_NAME=$name"          >> $env:GITHUB_ENV
+
+      - name: Build
+        run: msbuild "${{ env.SOLUTION }}" /p:Configuration=Release /p:Platform=x64 /m
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $tag  = "${{ github.ref_name }}"
+          $name = $env:GAME_NAME
+
+          # Find the built exe anywhere under bin/Release-x64
+          $exes = @(Get-ChildItem "bin/Release-x64" -Recurse -Filter *.exe)
+          if ($exes.Count -ne 1) {
+            $exes | ForEach-Object { Write-Host $_.FullName }
+            throw "Expected exactly one exe under bin/Release-x64, found $($exes.Count)"
+          }
+          $exe = $exes[0]
+          $dir = $exe.DirectoryName
+          $pdb = Join-Path $dir ($exe.BaseName + ".pdb")
+
+          New-Item -ItemType Directory dist/game, dist/symbols -Force | Out-Null
+
+          # Player zip: exe + res (if the game has one)
+          Copy-Item $exe.FullName "dist/game/$name.exe"
+          if (Test-Path "$dir/res") { Copy-Item "$dir/res" dist/game/res -Recurse }
+          Compress-Archive dist/game/* "dist/$name-$tag.zip"
+
+          # Symbols zip: pdb + the exact exe it matches
+          Copy-Item $pdb dist/symbols/
+          Copy-Item $exe.FullName dist/symbols/
+          Compress-Archive dist/symbols/* "dist/$name-$tag-symbols.zip"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          body: "**Players:** download `${{ env.GAME_NAME }}-${{ github.ref_name }}.zip`. The symbols zip and source code archives are for developers."

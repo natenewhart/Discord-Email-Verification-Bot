@@ -3,6 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Secrets
+.env
+.env.*
+
 # User-specific files
 *.rsuser
 *.suo
@@ -28,6 +32,7 @@ x86/
 [Aa][Rr][Mm]64/
 bld/
 [Bb]in/
+bin-int/
 [Oo]bj/
 [Oo]ut/
 [Ll]og/

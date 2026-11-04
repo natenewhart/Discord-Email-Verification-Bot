@@ -1,5 +1,7 @@
 // Nate Newhart - EnvLoader.h
 
+// Load environment variables from a .env file and provide access to them using Env::getVar("VAR_NAME").
+
 #pragma once
 
 #include <fstream>

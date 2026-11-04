@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Discord Email Verification/Discord Email Verification.vcxproj" Id="25caddc5-2e71-4a63-a224-75916204f70d" />
+</Solution>

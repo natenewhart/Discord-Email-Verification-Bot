@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "C:\\dev\\Discord Email Verification\\bin-int\\Debug-x64\\Discord Email Verification\\main.obj",
+            "outputs": [
+                "C:\\dev\\Discord Email Verification\\bin-int\\Debug-x64\\Discord Email Verification\\main.cpp.obj.dt.module.json",
+                "C:\\dev\\Discord Email Verification\\bin-int\\Debug-x64\\Discord Email Verification\\main.cpp.obj.dt.d.json"
+            ],
+            "requires": []
+        }
+    ]
+}

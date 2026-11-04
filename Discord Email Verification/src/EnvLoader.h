@@ -10,7 +10,8 @@
 namespace Env
 {
 	inline bool load(const std::string& filename = ".env"); // Load environment variables from a .env file
-	inline std::string getVar(const std::string& name, const std::string& fallback);
+	inline std::string getVar(const std::string& name, const std::string& fallback); // Get an environment variable, return fallback if it doesn't exist
+	inline std::string getVar(const std::string& name); // Get an environment variable, throw if it doesn't exist
 	inline bool hasVar(const char* name); // Check if an environment variable exists
 
 	namespace detail
@@ -60,6 +61,16 @@ inline std::string Env::getVar(const std::string& name, const std::string& fallb
 	if (!detail::tryGetVar(name.c_str(), value))
 	{
 		return fallback;
+	}
+	return value;
+}
+
+std::string Env::getVar(const std::string& name)
+{
+	std::string value;
+	if (!detail::tryGetVar(name.c_str(), value))
+	{
+		throw std::runtime_error("Environment variable not found: " + name);
 	}
 	return value;
 }

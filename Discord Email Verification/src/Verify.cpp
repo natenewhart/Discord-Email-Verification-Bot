@@ -44,6 +44,7 @@ Verify::ConfirmationResults Verify::ConfirmUser(tUserId userId, const std::strin
 std::string Verify::GetVerificationCode(tUserId userId)
 {
 	// TODO: make this safe from calling when user is not in system
+	// uses .at() so code fails
 
 	return mUserIdToVerificationData.at(userId).verificationCode; // Return the verification code for the user
 }

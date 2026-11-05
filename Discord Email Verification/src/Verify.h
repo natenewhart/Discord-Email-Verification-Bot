@@ -1,4 +1,6 @@
-// Nate Newhart - Verify.
+// Nate Newhart - Verify.h
+
+// Email verification object; stores user ids, timestamps, and verification requests
 
 #pragma once
 #include <string>
@@ -60,6 +62,7 @@ private:
 	std::unordered_map<tUserId, UserData> mUserIdToVerificationData; // Maps user IDs to their verification data
 	std::deque<QueueEntry> mTimeQueue; // Queue to track the order of user submissions for verification
 
+	// TODO: location of constexpr's maybe in nameesapce
 	static constexpr int scCodeLength = 6; // Length of hexadecimal verification code (must be in range [1, 16])
 	static constexpr int scMaxConfirmationAttempts = 5;
 	static constexpr std::chrono::minutes scVerificationLifetime = std::chrono::minutes(3); // Lifetime of verification code

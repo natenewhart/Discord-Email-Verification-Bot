@@ -1,6 +1,7 @@
 // Nate Newhart - Verify.h
 
 // Email verification object; stores user ids, timestamps, and verification requests
+// Submit user id and then confirm them with the inputted code
 
 #pragma once
 #include <string>
@@ -13,12 +14,12 @@
 class Verify
 {
 public:
-	enum SubmissionResults
+	enum class SubmissionResults // Result types for SubmitUser
 	{
 		CooldownFailure,
 		Pass
 	};
-	enum class ConfirmationResults
+	enum class ConfirmationResults // Result types for ConfirmUser
 	{
 		Pass,
 		UserNotFound,

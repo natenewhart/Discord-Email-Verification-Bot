@@ -1,11 +1,12 @@
 // Nate Newhart - main.cpp
 
-#include <print>
+#include <print> // TODO: remove all print includes
 #include <iostream>
+#include <format>
 
 #include <dpp/dpp.h>
-#include <CRandom/CRandom.hpp>
 #include "EnvLoader.h"
+#include "Verify.h"
 
 /*
 * TODO:
@@ -41,6 +42,7 @@
 int main()
 {
 	if (!Env::load()) return -1; // Load environment variables from .env file
+	Verify verifier; // Create an instance of the Verify class
 	
 	const std::string cBotToken = Env::getVar("BOT_TOKEN");
 
@@ -51,17 +53,61 @@ int main()
 	{
 		if (dpp::run_once<struct register_bot_commands>())
 		{
-			bot.global_command_create(dpp::slashcommand("verify", "Input Verification Email", bot.me.id));
+			dpp::slashcommand verify("verify", "Start email verification", bot.me.id);
+
+			dpp::slashcommand confirm("confirm", "Enter the code you received by email", bot.me.id);
+			confirm.add_option(dpp::command_option(dpp::co_string, "code", "The code from your email", true));
+
+			bot.guild_bulk_command_create({ verify, confirm }, // TODO: change this for official launch
+										  dpp::snowflake(Env::getVar("GUILD_ID")));
 		}
 	});
 	
-	bot.on_slashcommand([](const dpp::slashcommand_t& event)
+	// TODO: check if user is alreadyd verifed if they are they cant do it again
+	// TODO: expires in 3m message on email
+	bot.on_slashcommand([&verifier](const dpp::slashcommand_t& event)
 	{
 		if (event.command.get_command_name() == "verify")
 		{
+			switch (verifier.SubmitUser(event.command.usr.id))
+			{
+			case Verify::SubmissionResults::Pass:
+				std::println("Code: {}", verifier.GetVerificationCode(event.command.usr.id));
+				event.reply(dpp::message("Check your inbox, then run /confirm <code>.")
+							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
+				break;
+			case Verify::SubmissionResults::CooldownFailure:
+				event.reply(dpp::message("Verification cooldown, wait 30s between /verify calls")
+							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
+				break;
+			}
+		}
+		if (event.command.get_command_name() == "confirm")
+		{
 
+			std::string code = std::get<std::string>(event.get_parameter("code"));
+			switch (verifier.ConfirmUser(event.command.usr.id, code))
+			{
+			case Verify::ConfirmationResults::Pass:
+				event.reply("Confirmation successful!");
+				break;
+
+			case Verify::ConfirmationResults::UserNotFound:
+				event.reply("User not found. Use /verify to receive a code.");
+				break;
+
+			case Verify::ConfirmationResults::WrongCode:
+				event.reply("Confirmation failed. Incorrect Code.");
+				break;
+
+			case Verify::ConfirmationResults::TooManyAttempts:
+				event.reply("Confirmation canceled: Too Many Attempts. Start again with /verify");
+				break;
+			}
 		}
 	});
+
+	dpp::snowflake guildId = std::stoull(Env::getVar("GUILD_ID"));
 
 	bot.start(dpp::st_wait);
 

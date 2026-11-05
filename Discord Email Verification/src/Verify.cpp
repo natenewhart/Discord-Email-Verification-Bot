@@ -5,7 +5,7 @@
 bool Verify::SubmitUser(tUserId userId)
 {
 	RemoveExpiredVerifications();
-	if (IsSubmitted(userId)) RemoveUserFromQueue(userId);
+	if (IsSubmitted(userId))
 
 	// TODO: Implement email check and return the reason why verify doesnt work
 
@@ -13,22 +13,25 @@ bool Verify::SubmitUser(tUserId userId)
 	return true;
 }
 
-bool Verify::ConfirmUser(tUserId userId, const std::string& code)
+Verify::ConfirmationResults Verify::ConfirmUser(tUserId userId, const std::string& code)
 {
 	RemoveExpiredVerifications();
-	if (!IsSubmitted(userId)) return false; // User is not in system so fail
+	if (!IsSubmitted(userId)) return ConfirmationResults::UserNotFound; // User is not in system so fail
 
 	if (mUserIdToVerificationData[userId].verificationCode == code)
 	{
 		RemoveUser(userId);
-		return true;
+		return ConfirmationResults::Confirmed;
 	}
 
 	mUserIdToVerificationData[userId].confirmationAttempts++;
 	if (mUserIdToVerificationData[userId].confirmationAttempts == scMaxConfirmationAttempts)
+	{
 		RemoveUser(userId);
+		return ConfirmationResults::TooManyAttempts;
+	}
 
-	return false;
+	return ConfirmationResults::WrongCode;
 }
 
 std::string Verify::GetVerificationCode(tUserId userId)

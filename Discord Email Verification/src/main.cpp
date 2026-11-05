@@ -67,12 +67,13 @@ int main()
 	// TODO: expires in 3m message on email
 	bot.on_slashcommand([&verifier](const dpp::slashcommand_t& event)
 	{
+		auto userId = event.command.usr.id;
 		if (event.command.get_command_name() == "verify")
 		{
-			switch (verifier.SubmitUser(event.command.usr.id))
+			switch (verifier.SubmitUser(userId))
 			{
 			case Verify::SubmissionResults::Pass:
-				std::println("Code: {}", verifier.GetVerificationCode(event.command.usr.id));
+				std::println("Code: {}", verifier.GetVerificationCode(userId));
 				event.reply(dpp::message("Check your inbox, then run /confirm <code>.")
 							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
 				break;
@@ -84,24 +85,22 @@ int main()
 		}
 		if (event.command.get_command_name() == "confirm")
 		{
-
 			std::string code = std::get<std::string>(event.get_parameter("code"));
-			switch (verifier.ConfirmUser(event.command.usr.id, code))
+			switch (verifier.ConfirmUser(userId, code))
 			{
 			case Verify::ConfirmationResults::Pass:
-				event.reply("Confirmation successful!");
+				event.reply(dpp::message("Confirmation successful!").set_flags(dpp::m_ephemeral));
 				break;
-
 			case Verify::ConfirmationResults::UserNotFound:
-				event.reply("User not found. Use /verify to receive a code.");
+				event.reply(dpp::message("No active code. Codes expire after 3 minutes, so use /verify to start over.")
+							.set_flags(dpp::m_ephemeral));
 				break;
-
 			case Verify::ConfirmationResults::WrongCode:
-				event.reply("Confirmation failed. Incorrect Code.");
+				event.reply(dpp::message("Incorrect code.").set_flags(dpp::m_ephemeral));
 				break;
-
 			case Verify::ConfirmationResults::TooManyAttempts:
-				event.reply("Confirmation canceled: Too Many Attempts. Start again with /verify");
+				event.reply(dpp::message("Too many attempts. Start again with /verify.")
+							.set_flags(dpp::m_ephemeral));
 				break;
 			}
 		}

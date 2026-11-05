@@ -2,15 +2,22 @@
 #include <format>
 #include <print>
 
-bool Verify::SubmitUser(tUserId userId)
+Verify::SubmissionResults Verify::SubmitUser(tUserId userId)
 {
 	RemoveExpiredVerifications();
 	if (IsSubmitted(userId))
+	{
+		auto now = std::chrono::steady_clock::now();
+		if (now - mUserIdToVerificationData[userId].timestamp < scSubmissionCooldown) // Cooldown failure
+			return SubmissionResults::CooldownFailure;
+		
+		RemoveUser(userId); // Overwrite user when they double submit
+	}
 
 	// TODO: Implement email check and return the reason why verify doesnt work
 
 	AddUser(userId);
-	return true;
+	return SubmissionResults::Pass;
 }
 
 Verify::ConfirmationResults Verify::ConfirmUser(tUserId userId, const std::string& code)
@@ -21,7 +28,7 @@ Verify::ConfirmationResults Verify::ConfirmUser(tUserId userId, const std::strin
 	if (mUserIdToVerificationData[userId].verificationCode == code)
 	{
 		RemoveUser(userId);
-		return ConfirmationResults::Confirmed;
+		return ConfirmationResults::Pass;
 	}
 
 	mUserIdToVerificationData[userId].confirmationAttempts++;
@@ -70,8 +77,9 @@ void Verify::RemoveExpiredVerifications()
 
 void Verify::AddUser(tUserId userId)
 {
-	mUserIdToVerificationData[userId] = { GenerateRandomCode(), 0 };
-	mTimeQueue.push_back({ userId, std::chrono::steady_clock::now() });
+	auto now = std::chrono::steady_clock::now();
+	mUserIdToVerificationData[userId] = { GenerateRandomCode(), 0, now };
+	mTimeQueue.push_back({ userId, now });
 }
 
 bool Verify::RemoveUser(tUserId userId)

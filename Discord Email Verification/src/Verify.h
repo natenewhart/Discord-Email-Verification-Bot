@@ -54,6 +54,9 @@ private:
 	bool RemoveUser(tUserId userId); // Remove user return true if user is removed
 	bool RemoveUserFromQueue(tUserId userId); // Move item in queue to the back of the queue
 
+	bool VerifyEmail();
+	static std::string ToUpper(std::string str);
+
 private:
 	CRandom mRNG;
 	std::unordered_map<tUserId, UserData> mUserIdToVerificationData; // Maps user IDs to their verification data

@@ -25,7 +25,8 @@ Verify::ConfirmationResults Verify::ConfirmUser(tUserId userId, const std::strin
 	RemoveExpiredVerifications();
 	if (!IsSubmitted(userId)) return ConfirmationResults::UserNotFound; // User is not in system so fail
 
-	if (mUserIdToVerificationData[userId].verificationCode == code)
+	std::string normCode = Verify::ToUpper(code);
+	if (mUserIdToVerificationData[userId].verificationCode == normCode)
 	{
 		RemoveUser(userId);
 		return ConfirmationResults::Pass;
@@ -103,4 +104,11 @@ bool Verify::RemoveUserFromQueue(tUserId userId)
 		}
 	}
 	return false;
+}
+
+std::string Verify::ToUpper(std::string str)
+{
+	for (char& c : str)
+		c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+	return str;
 }

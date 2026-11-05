@@ -16,15 +16,11 @@ class Verify
 public:
 	enum class SubmissionResults // Result types for SubmitUser
 	{
-		CooldownFailure,
-		Pass
+		CooldownFailure, Pass
 	};
 	enum class ConfirmationResults // Result types for ConfirmUser
 	{
-		Pass,
-		UserNotFound,
-		WrongCode,
-		TooManyAttempts,
+		Pass, UserNotFound, WrongCode, TooManyAttempts,
 	};
 private:
 	using tUserId = uint64_t; // Integer type wrapper for user IDs

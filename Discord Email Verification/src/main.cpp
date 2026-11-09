@@ -66,7 +66,7 @@ int main()
 	});
 	
 	// TODO: check if user is alreadyd verifed if they are they cant do it again
-	// TODO: expires in 3m message on email
+	// TODO: add expires in 3m message on email
 	bot.on_slashcommand([&verifier](const dpp::slashcommand_t& event)
 	{
 		auto userId = event.command.usr.id;
@@ -81,7 +81,7 @@ int main()
 							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
 				break;
 			case Verify::SubmissionResults::CooldownFailure:
-				event.reply(dpp::message("Verification cooldown, wait 30s between /verify calls")
+				event.reply(dpp::message("Verification cooldown, wait 20s between /verify calls")
 							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
 				break;
 			case Verify::SubmissionResults::EmailDomainError:
@@ -89,7 +89,7 @@ int main()
 							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
 				break;
 			case Verify::SubmissionResults::EmailNameError:
-				event.reply(dpp::message("Verification Failure: email name contains illegal characters")
+				event.reply(dpp::message("Verification Failure: email name error")
 							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
 				break;
 			}

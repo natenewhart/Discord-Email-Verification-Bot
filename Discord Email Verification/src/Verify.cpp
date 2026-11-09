@@ -121,20 +121,23 @@ bool Verify::RemoveUserFromQueue(tUserId userId)
 
 Verify::SubmissionResults Verify::VerifyEmail(const std::string& email)
 {
+	if (email.empty() || email.size() > scMaxEmailLength)
+		return SubmissionResults::EmailNameError;
+
 	int atCount = 0;
 	for (unsigned char c : email)
 	{
 		if (c == '@') atCount++;
 
 		bool passed = std::isalnum(c) || c == '@' || c == '.' || c == '_' || c == '+' || c == '-';
-		if (!passed) return SubmissionResults::EmailInvalidCharacterError; // Only allowed characters
+		if (!passed) return SubmissionResults::EmailNameError; // Only allowed characters
 	}
 	if (atCount != 1)
-		return SubmissionResults::EmailInvalidCharacterError; // Only one at symbol allowed
+		return SubmissionResults::EmailNameError; // Only one at symbol allowed
 
 	size_t split = email.find('@');
 	if (split == 0)
-		return SubmissionResults::EmailInvalidCharacterError; // If email has no username
+		return SubmissionResults::EmailNameError; // If email has no username
 
 	std::string domain = email.substr(split + 1);
 	domain = ToLower(domain);

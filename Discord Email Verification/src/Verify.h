@@ -16,7 +16,7 @@ class Verify
 public:
 	enum class SubmissionResults // Result types for SubmitUser
 	{
-		Pass, CooldownFailure, EmailDomainError, EmailInvalidCharacterError
+		Pass, CooldownFailure, EmailDomainError, EmailNameError
 	};
 	enum class ConfirmationResults // Result types for ConfirmUser
 	{
@@ -72,11 +72,12 @@ private:
 	CRandom mRNG;
 	std::unordered_map<tUserId, UserData> mUserIdToVerificationData; // Maps user IDs to their verification data
 	std::deque<QueueEntry> mTimeQueue; // Queue to track the order of user submissions for verification
+	const std::vector<std::string> mcValidDomains; // List of valid domains for bot
 
 	// TODO: location of constexpr's maybe in nameesapce
-	static constexpr int scCodeLength = 6; // Length of hexadecimal verification code (must be in range [1, 16])
-	static constexpr int scMaxConfirmationAttempts = 5;
+	static constexpr size_t scMaxEmailLength = 254; // Practical email length limit
+	static constexpr size_t scCodeLength     = 6; // Length of hexadecimal verification code (must be in range [1, 16])
+	static constexpr size_t scMaxConfirmationAttempts = 5;
 	static constexpr std::chrono::minutes scVerificationLifetime = std::chrono::minutes(3); // Lifetime of verification code
 	static constexpr std::chrono::seconds scSubmissionCooldown   = std::chrono::seconds(20);
-	const std::vector<std::string> mcValidDomains;
 };

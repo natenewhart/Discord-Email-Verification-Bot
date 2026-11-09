@@ -71,9 +71,15 @@ bool Verify::IsSubmitted(tUserId userId) const
 std::string Verify::GenerateRandomCode()
 {
 	static_assert(scCodeLength >= 1 && scCodeLength <= 15, "code length out of range"); // Code length must match bounds
-	uint64_t max = (1ULL << (4 * scCodeLength)) - 1; // Power of 16 optimization; 16^n where n is digits
-	uint64_t code = mRNG.uInt64(0, max);
-	return std::format("{:0{}X}", code, scCodeLength); // Convert to hexadecimal string
+	
+	static thread_local std::random_device rd;
+	uint64_t bitLength = (1ULL << (4 * scCodeLength)) - 1;
+	const uint64_t hi = rd();
+	const uint64_t lo = rd();
+	const uint64_t rand64 = (hi << 32) | lo;
+	const uint64_t bits = rand64 & bitLength; // Preserve bottom bits to be converted to hexadecimal value
+
+	return std::format("{:0{}X}", bits, scCodeLength);
 }
 
 void Verify::RemoveExpiredSubmissions()

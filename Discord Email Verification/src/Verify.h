@@ -9,8 +9,6 @@
 #include <chrono>
 #include <queue>
 
-#include <CRandom/CRandom.hpp>
-
 class Verify
 {
 public:
@@ -69,7 +67,6 @@ private:
 	static void TrimString(std::string& str);
 
 private:
-	CRandom mRNG;
 	std::unordered_map<tUserId, UserData> mUserIdToVerificationData; // Maps user IDs to their verification data
 	std::deque<QueueEntry> mTimeQueue; // Queue to track the order of user submissions for verification
 	const std::vector<std::string> mcValidDomains; // List of valid domains for bot

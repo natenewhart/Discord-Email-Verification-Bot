@@ -1,6 +1,7 @@
 #include "Verify.h"
 #include <format>
 #include <print>
+#include <random>
 
 Verify::Verify(const std::string& domain)
 	: mcValidDomains{ domain }

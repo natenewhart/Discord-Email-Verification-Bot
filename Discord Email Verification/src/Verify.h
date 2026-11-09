@@ -39,15 +39,16 @@ private:
 	};
 
 public:
-	Verify() = default;
+	Verify(const std::string& domain);               // Single domain construction
+	Verify(const std::vector<std::string>& domains); // Domain list construction
 
 	// Verification Pipeline
 	SubmissionResults SubmitUser(tUserId userId, std::string email); // Store user data and generate code for verification return true if user is not in system. If user is already in system return false and fail
 	ConfirmationResults ConfirmUser(tUserId userId, const std::string& code); // Check if the provided code is correct and return true if passed
 	
 	// Getters
-	std::string GetVerificationCode(tUserId userId); // Get the verification code tied to userId
-	bool IsSubmitted(tUserId userId); // Has user been submitted but not confirmed
+	std::string GetVerificationCode(tUserId userId) const; // Get the verification code tied to userId
+	bool IsSubmitted(tUserId userId) const; // Has user been submitted but not confirmed
 
 	// Clean Up
 	void RemoveExpiredSubmissions(); // Remove all users who have been in the system longer than allowed lifetime
@@ -60,6 +61,7 @@ private:
 	bool RemoveUserFromQueue(tUserId userId); // Move item in queue to the back of the queue
 
 	SubmissionResults VerifyEmail(const std::string& email);
+	bool IsValidDomain(std::string_view domain) const;
 
 	static std::string ToUpper(std::string str);
 	static std::string ToLower(std::string str); // TODO: make these void and edit the string not copy
@@ -76,5 +78,5 @@ private:
 	static constexpr int scMaxConfirmationAttempts = 5;
 	static constexpr std::chrono::minutes scVerificationLifetime = std::chrono::minutes(3); // Lifetime of verification code
 	static constexpr std::chrono::seconds scSubmissionCooldown   = std::chrono::seconds(20);
-	const std::string mcDomain = "ucsb.edu"; // TODO: when implemented make sure the domain is toLowered
+	const std::vector<std::string> mcValidDomains;
 };

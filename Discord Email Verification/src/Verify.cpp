@@ -2,6 +2,14 @@
 #include <format>
 #include <print>
 
+Verify::Verify(const std::string& domain)
+	: mcValidDomains{ domain }
+{}
+
+Verify::Verify(const std::vector<std::string>& domains)
+	: mcValidDomains(domains)
+{}
+
 Verify::SubmissionResults Verify::SubmitUser(tUserId userId, std::string email)
 {
 	RemoveExpiredSubmissions();
@@ -45,7 +53,7 @@ Verify::ConfirmationResults Verify::ConfirmUser(tUserId userId, const std::strin
 	return ConfirmationResults::WrongCode;
 }
 
-std::string Verify::GetVerificationCode(tUserId userId)
+std::string Verify::GetVerificationCode(tUserId userId) const
 {
 	// TODO: make this safe from calling when user is not in system
 	// uses .at() so code fails
@@ -53,7 +61,7 @@ std::string Verify::GetVerificationCode(tUserId userId)
 	return mUserIdToVerificationData.at(userId).verificationCode; // Return the verification code for the user
 }
 
-bool Verify::IsSubmitted(tUserId userId)
+bool Verify::IsSubmitted(tUserId userId) const
 {
 	return mUserIdToVerificationData.find(userId) != mUserIdToVerificationData.end();
 }
@@ -131,10 +139,19 @@ Verify::SubmissionResults Verify::VerifyEmail(const std::string& email)
 	std::string domain = email.substr(split + 1);
 	domain = ToLower(domain);
 
-	if (domain != mcDomain)
+	if (!IsValidDomain(domain))
 		return SubmissionResults::EmailDomainError; // Wrong domain
 
 	return SubmissionResults::Pass;
+}
+
+bool Verify::IsValidDomain(std::string_view domain) const
+{
+	for (auto validDomain : mcValidDomains)
+	{
+		if (domain == validDomain) return true;
+	}
+	return false;
 }
 
 std::string Verify::ToUpper(std::string str)

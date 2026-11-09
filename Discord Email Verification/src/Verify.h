@@ -16,7 +16,7 @@ class Verify
 public:
 	enum class SubmissionResults // Result types for SubmitUser
 	{
-		CooldownFailure, Pass
+		Pass, CooldownFailure, EmailDomainError, EmailInvalidCharacterError
 	};
 	enum class ConfirmationResults // Result types for ConfirmUser
 	{
@@ -27,6 +27,7 @@ private:
 	struct UserData
 	{
 		//std::string email; // TODO: is this needed
+		std::string email;
 		std::string verificationCode;
 		int confirmationAttempts = 0;
 		std::chrono::steady_clock::time_point timestamp; // timestamp for submission cooldown
@@ -40,22 +41,30 @@ private:
 public:
 	Verify() = default;
 
-	SubmissionResults SubmitUser(tUserId userId); // Store user data and generate code for verification return true if user is not in system. If user is already in system return false and fail
+	// Verification Pipeline
+	SubmissionResults SubmitUser(tUserId userId, std::string email); // Store user data and generate code for verification return true if user is not in system. If user is already in system return false and fail
 	ConfirmationResults ConfirmUser(tUserId userId, const std::string& code); // Check if the provided code is correct and return true if passed
+	
+	// Getters
 	std::string GetVerificationCode(tUserId userId); // Get the verification code tied to userId
 	bool IsSubmitted(tUserId userId); // Has user been submitted but not confirmed
 
-	void RemoveExpiredVerifications(); // Remove expired verification codes from the system
+	// Clean Up
+	void RemoveExpiredSubmissions(); // Remove all users who have been in the system longer than allowed lifetime
 
 private:
 	std::string GenerateRandomCode();
 
-	void AddUser(tUserId userId);    // Overwrite and add user
+	void AddUser(tUserId userId, const std::string& email); // Overwrite and add user
 	bool RemoveUser(tUserId userId); // Remove user return true if user is removed
 	bool RemoveUserFromQueue(tUserId userId); // Move item in queue to the back of the queue
 
-	bool VerifyEmail();
+	SubmissionResults VerifyEmail(const std::string& email);
+
 	static std::string ToUpper(std::string str);
+	static std::string ToLower(std::string str); // TODO: make these void and edit the string not copy
+	// TODO: one string parser header library used for both env loader and for verify
+	static void TrimString(std::string& str);
 
 private:
 	CRandom mRNG;
@@ -67,4 +76,5 @@ private:
 	static constexpr int scMaxConfirmationAttempts = 5;
 	static constexpr std::chrono::minutes scVerificationLifetime = std::chrono::minutes(3); // Lifetime of verification code
 	static constexpr std::chrono::seconds scSubmissionCooldown   = std::chrono::seconds(20);
+	const std::string mcDomain = "ucsb.edu"; // TODO: when implemented make sure the domain is toLowered
 };

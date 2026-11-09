@@ -88,31 +88,29 @@ inline bool Env::hasVar(const char* name)
 inline bool Env::detail::tryGetVar(const char* name, std::string& out)
 {
 #if defined(_WIN32)
-	char* buf = nullptr;
-	size_t len = 0;
-	if (_dupenv_s(&buf, &len, name) != 0 || buf == nullptr)
+	char* envVar = nullptr;
+	size_t length = 0;
+	if (_dupenv_s(&envVar, &length, name) != 0 || envVar == nullptr)
 	{
-		std::free(buf);
+		std::free(envVar);
 		return false;
 	}
-	out.assign(buf);
-	std::free(buf);
+	out.assign(envVar);
+	std::free(envVar);
 	return true;
 #else
-	const char* v = std::getenv(name);
-	if (!v)
+	const char* envVar = std::getenv(name);
+	if (!envVar)
 		return false;
-	out.assign(v);
+	out.assign(envVar);
 	return true;
 #endif
 }
 
 inline int Env::detail::setVar(const char* name, const char* value)
 {
-	if (!name || !value)
-		return -1;
-	if (hasVar(name))
-		return -1; // Do not overwrite existing environment variables
+	if (!name || !value) return -1;
+	if (hasVar(name))    return -1; // Do not overwrite existing environment variables
 	
 	#if defined(_WIN32)
 		return _putenv_s(name, value);

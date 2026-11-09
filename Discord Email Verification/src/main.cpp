@@ -53,10 +53,12 @@ int main()
 	{
 		if (dpp::run_once<struct register_bot_commands>())
 		{
-			dpp::slashcommand verify("verify", "Start email verification", bot.me.id);
+			dpp::slashcommand verify("verify", "Enter your email", bot.me.id);
+			verify.add_option(dpp::command_option(dpp::co_string, "email", "Your email address", true));
 
 			dpp::slashcommand confirm("confirm", "Enter the code you received by email", bot.me.id);
 			confirm.add_option(dpp::command_option(dpp::co_string, "code", "The code from your email", true));
+			// TODO: code max length of 256 or whatever so no one sends mb of text through api
 
 			bot.guild_bulk_command_create({ verify, confirm }, // TODO: change this for official launch
 										  dpp::snowflake(Env::getVar("GUILD_ID")));
@@ -70,7 +72,8 @@ int main()
 		auto userId = event.command.usr.id;
 		if (event.command.get_command_name() == "verify")
 		{
-			switch (verifier.SubmitUser(userId))
+			auto userEmail = std::get<std::string>(event.get_parameter("email"));
+			switch (verifier.SubmitUser(userId, userEmail))
 			{
 			case Verify::SubmissionResults::Pass:
 				std::println("Code: {}", verifier.GetVerificationCode(userId));
@@ -81,12 +84,20 @@ int main()
 				event.reply(dpp::message("Verification cooldown, wait 30s between /verify calls")
 							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
 				break;
+			case Verify::SubmissionResults::EmailDomainError:
+				event.reply(dpp::message("Verification Failure: email domain is invalid")
+							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
+				break;
+			case Verify::SubmissionResults::EmailInvalidCharacterError:
+				event.reply(dpp::message("Verification Failure: email name contains illegal characters")
+							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
+				break;
 			}
 		}
 		if (event.command.get_command_name() == "confirm")
 		{
-			std::string code = std::get<std::string>(event.get_parameter("code"));
-			switch (verifier.ConfirmUser(userId, code))
+			std::string verificationCode = std::get<std::string>(event.get_parameter("code"));
+			switch (verifier.ConfirmUser(userId, verificationCode))
 			{
 			case Verify::ConfirmationResults::Pass:
 				event.reply(dpp::message("Confirmation successful!").set_flags(dpp::m_ephemeral));
@@ -112,3 +123,5 @@ int main()
 
 	return 0;
 }
+
+// TODO: timed removal of submissions, after leastmost submission set a 30 minute timer and after its over remove all submissions

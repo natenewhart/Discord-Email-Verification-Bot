@@ -2,9 +2,9 @@
 #include <format>
 #include <print>
 
-Verify::SubmissionResults Verify::SubmitUser(tUserId userId)
+Verify::SubmissionResults Verify::SubmitUser(tUserId userId, std::string email)
 {
-	RemoveExpiredVerifications();
+	RemoveExpiredSubmissions();
 	if (IsSubmitted(userId))
 	{
 		auto now = std::chrono::steady_clock::now();
@@ -14,15 +14,18 @@ Verify::SubmissionResults Verify::SubmitUser(tUserId userId)
 		RemoveUser(userId); // Overwrite user when they double submit
 	}
 
-	// TODO: Implement email check and return the reason why verify doesnt work
+	// TODO: email cooldown doesnt apply if verification doesnt work; cooldown is only applied if you successfully submitted
+	TrimString(email);
+	auto emailResults = VerifyEmail(email);
+	if (emailResults != SubmissionResults::Pass) return emailResults; // Return error value from email verification
 
-	AddUser(userId);
+	AddUser(userId, email);
 	return SubmissionResults::Pass;
 }
 
 Verify::ConfirmationResults Verify::ConfirmUser(tUserId userId, const std::string& code)
 {
-	RemoveExpiredVerifications();
+	RemoveExpiredSubmissions();
 	if (!IsSubmitted(userId)) return ConfirmationResults::UserNotFound; // User is not in system so fail
 
 	std::string normCode = Verify::ToUpper(code);
@@ -65,7 +68,7 @@ std::string Verify::GenerateRandomCode()
 	return std::format("{:0{}X}", code, scCodeLength); // Convert to hexadecimal string
 }
 
-void Verify::RemoveExpiredVerifications()
+void Verify::RemoveExpiredSubmissions()
 {
 	const auto now = std::chrono::steady_clock::now();
 
@@ -77,11 +80,13 @@ void Verify::RemoveExpiredVerifications()
 	}
 }
 
-void Verify::AddUser(tUserId userId)
+void Verify::AddUser(tUserId userId, const std::string& email)
 {
+	auto code = GenerateRandomCode();
 	auto now = std::chrono::steady_clock::now();
-	mUserIdToVerificationData[userId] = { GenerateRandomCode(), 0, now };
-	mTimeQueue.push_back({ userId, now });
+	int attempts = 0;
+	mUserIdToVerificationData[userId] = { email, GenerateRandomCode(), attempts, now };
+	mTimeQueue.push_back({ userId, now }); // Timestamp queue
 }
 
 bool Verify::RemoveUser(tUserId userId)
@@ -106,9 +111,50 @@ bool Verify::RemoveUserFromQueue(tUserId userId)
 	return false;
 }
 
+Verify::SubmissionResults Verify::VerifyEmail(const std::string& email)
+{
+	int atCount = 0;
+	for (unsigned char c : email)
+	{
+		if (c == '@') atCount++;
+
+		bool passed = std::isalnum(c) || c == '@' || c == '.' || c == '_' || c == '+' || c == '-';
+		if (!passed) return SubmissionResults::EmailInvalidCharacterError; // Only allowed characters
+	}
+	if (atCount != 1)
+		return SubmissionResults::EmailInvalidCharacterError; // Only one at symbol allowed
+
+	size_t split = email.find('@');
+	if (split == 0)
+		return SubmissionResults::EmailInvalidCharacterError; // If email has no username
+
+	std::string domain = email.substr(split + 1);
+	domain = ToLower(domain);
+
+	if (domain != mcDomain)
+		return SubmissionResults::EmailDomainError; // Wrong domain
+
+	return SubmissionResults::Pass;
+}
+
 std::string Verify::ToUpper(std::string str)
 {
 	for (char& c : str)
 		c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
 	return str;
+}
+
+std::string Verify::ToLower(std::string str)
+{
+	for (char& c : str)
+		c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+	return str;
+}
+
+
+void Verify::TrimString(std::string& str)
+{
+	const char* ws = " \t\r\n";
+	str.erase(0, str.find_first_not_of(ws));
+	str.erase(str.find_last_not_of(ws) + 1);
 }

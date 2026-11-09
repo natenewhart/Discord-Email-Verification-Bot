@@ -88,7 +88,7 @@ int main()
 				event.reply(dpp::message("Verification Failure: email domain is invalid")
 							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
 				break;
-			case Verify::SubmissionResults::EmailInvalidCharacterError:
+			case Verify::SubmissionResults::EmailNameError:
 				event.reply(dpp::message("Verification Failure: email name contains illegal characters")
 							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
 				break;

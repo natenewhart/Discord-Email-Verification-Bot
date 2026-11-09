@@ -42,8 +42,8 @@
 int main()
 {
 	if (!Env::load()) return -1; // Load environment variables from .env file
-	Verify verifier; // Create an instance of the Verify class
-	
+	Verify verifier(Env::getVar("EMAIL_DOMAIN")); // Create an instance of the Verify class
+
 	const std::string cBotToken = Env::getVar("BOT_TOKEN");
 
 	dpp::cluster bot(cBotToken); 

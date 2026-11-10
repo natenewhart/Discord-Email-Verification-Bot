@@ -39,8 +39,7 @@
 * add guild config json which is updated with /config command and stored on disk for data per server
 * 
 * // SECURITY TODO:
-* 1. cyptographically secure RNG or CSPRNG
-* 2. timeouts for multiple users trying to verify at the same time. Prevents server attacks from tons of users trying to apply at the same time
+* 1. timeouts for multiple users trying to verify at the same time. Prevents server attacks from tons of users trying to apply at the same time
 */
 
 int main()

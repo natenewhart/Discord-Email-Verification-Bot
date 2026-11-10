@@ -86,6 +86,9 @@
     <OutDir>$(SolutionDir)bin\$(Configuration)-$(Platform)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)bin-int\$(Configuration)-$(Platform)\$(ProjectName)\</IntDir>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -122,15 +125,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);SFML_STATIC</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\libdpp-10.1.6-win64-debug-vs2022\include\dpp-10.1;$(SolutionDir)external;</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)external\DPP\x64-MSVC-$(Configuration)\include\dpp-10.1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\libdpp-10.1.6-win64-debug-vs2022\lib\dpp-10.1</AdditionalLibraryDirectories>
-      <AdditionalDependencies>dpp.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)external\DPP\x64-MSVC-$(Configuration)\lib\dpp-10.1;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,28 +144,36 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SFML_STATIC</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\libdpp-10.1.6-win64-release-vs2022\include\dpp-10.1;$(SolutionDir)external;</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)external\DPP\x64-MSVC-$(Configuration)\include\dpp-10.1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\libdpp-10.1.6-win64-release-vs2022\lib\dpp-10.1</AdditionalLibraryDirectories>
-      <AdditionalDependencies>dpp.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)external\DPP\x64-MSVC-$(Configuration)\lib\dpp-10.1;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Mailer.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Verify.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Mailer.h" />
     <ClInclude Include="src\EnvLoader.h" />
     <ClInclude Include="src\Verify.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <Target Name="CopyDppRuntime" AfterTargets="Build" Condition="'$(Platform)'=='x64'">
+    <ItemGroup>
+      <DppRuntimeFiles Include="$(SolutionDir)external\DPP\x64-MSVC-$(Configuration)\bin\*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DppRuntimeFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
   <Target Name="CopyResources" AfterTargets="Build">
     <RemoveDir Directories="$(OutDir)res" />
     <ItemGroup>

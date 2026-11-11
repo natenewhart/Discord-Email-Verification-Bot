@@ -100,7 +100,7 @@ void Verify::AddUser(tUserId userId, const std::string& email)
 	auto code = GenerateRandomCode();
 	auto now = std::chrono::steady_clock::now();
 	int attempts = 0;
-	mUserIdToVerificationData[userId] = { email, GenerateRandomCode(), attempts, now };
+	mUserIdToVerificationData[userId] = { email, code, attempts, now };
 	mTimeQueue.push_back({ userId, now }); // Timestamp queue
 }
 

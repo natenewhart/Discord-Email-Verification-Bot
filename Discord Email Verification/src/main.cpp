@@ -79,7 +79,7 @@ int main()
 			switch (verifier.SubmitUser(userId, userEmail))
 			{
 			case Verify::SubmissionResults::Pass:
-				std::println("Code: {}", verifier.GetVerificationCode(userId));
+				//std::println("Code: {}", verifier.GetVerificationCode(userId));
 				event.reply(dpp::message("Check your inbox, then run /confirm <code>.")
 							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
 				break;

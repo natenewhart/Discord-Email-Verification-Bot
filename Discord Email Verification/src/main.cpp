@@ -41,122 +41,14 @@
 #include <iostream>
 #include <format>
 
-#include <dpp/dpp.h>
-#include "EnvLoader.h"
-#include "Verify.h"
-#include "Mailer.h"
-
-static inline Mailer::Email makeEmail(std::string to, std::string code)
-{
-	Mailer::Email email;
-	email.to      = to;
-	email.subject = "Discord Verification Code";
-	email.body    = "Your verification code is " + code + "\nThis code expires in 3m.";
-	return email;
-}
+#include "VerifierBot.h"
 
 int main()
 {
+	VerifierBot bot;
+	if (!bot.GetStatus()) return -1; // Env failure
 
-	if (!Env::load()) return -1; // Load environment variables from .env file
-	Verify verifier(Env::getVar("EMAIL_DOMAIN")); // Create an instance of the Verify class
-
-	Mailer::SMTP emailSender(Env::getVar("SMTP_HOST", "smtp.gmail.com"),
-					  static_cast<unsigned int>(std::stoul(Env::getVar("SMTP_PORT", "587"))),
-					  Env::getVar("SMTP_USERNAME"),
-					  Env::getVar("SMTP_PASSWORD"),
-					  Env::getVar("DISPLAY_NAME", "Email Verifier"));
-
-	const std::string cBotToken = Env::getVar("BOT_TOKEN");
-
-	dpp::cluster bot(cBotToken); 
-	bot.on_log(dpp::utility::cout_logger());
-
-	bot.on_ready([&bot](const dpp::ready_t& event)
-	{
-		if (dpp::run_once<struct register_bot_commands>())
-		{
-			dpp::slashcommand verify("verify", "Enter your email", bot.me.id);
-			verify.add_option(dpp::command_option(dpp::co_string, "email", "Your email address", true));
-
-			dpp::slashcommand confirm("confirm", "Enter the code you received by email", bot.me.id);
-			confirm.add_option(dpp::command_option(dpp::co_string, "code", "The code from your email", true));
-
-			bot.guild_bulk_command_create({ verify, confirm }, // TODO: change this for official launch
-										  dpp::snowflake(Env::getVar("GUILD_ID")));
-		}
-	});
-	
-	bot.on_slashcommand([&verifier, &emailSender, &bot](const dpp::slashcommand_t& event)
-	{
-		auto userId = event.command.usr.id;
-		if (event.command.get_command_name() == "verify")
-		{
-			auto userEmail = std::get<std::string>(event.get_parameter("email"));
-			switch (verifier.SubmitUser(userId, userEmail))
-			{
-			case Verify::SubmissionResults::Pass:
-			{
-				event.thinking(true);
-
-				std::string verificationCode = verifier.GetVerificationCode(userId);
-				Mailer::SendResult emailResult      = emailSender.Send(makeEmail(userEmail, verificationCode));
-
-				if (emailResult.sendStatus != Mailer::SendStatus::Pass)
-				{
-					event.edit_original_response(dpp::message(
-						"Check your inbox, then run /confirm <code>. If it doesn't arrive in a few minutes, "
-						"check the spelling of your address and run /verify again."));
-				}
-				else
-				{
-					verifier.RemoveUser(userId);
-					bot.log(dpp::ll_error, "email send failed: " + emailResult.errorMessage);
-					event.edit_original_response(dpp::message(
-						"Couldn't send the email. Please try again later."));
-				}
-				break;
-			}
-			case Verify::SubmissionResults::CooldownFailure:
-				event.reply(dpp::message("Verification cooldown, wait 20s between /verify calls")
-							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
-				break;
-			case Verify::SubmissionResults::EmailDomainError:
-				event.reply(dpp::message("Verification Failure: email domain is invalid")
-							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
-				break;
-			case Verify::SubmissionResults::EmailNameError:
-				event.reply(dpp::message("Verification Failure: email name error")
-							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
-				break;
-			}
-		}
-		if (event.command.get_command_name() == "confirm")
-		{
-			std::string verificationCode = std::get<std::string>(event.get_parameter("code"));
-			switch (verifier.ConfirmUser(userId, verificationCode))
-			{
-			case Verify::ConfirmationResults::Pass:
-				event.reply(dpp::message("Confirmation successful!").set_flags(dpp::m_ephemeral));
-				break;
-			case Verify::ConfirmationResults::UserNotFound:
-				event.reply(dpp::message("No active code. Codes expire after 3 minutes, so use /verify to start over.")
-							.set_flags(dpp::m_ephemeral));
-				break;
-			case Verify::ConfirmationResults::WrongCode:
-				event.reply(dpp::message("Incorrect code.").set_flags(dpp::m_ephemeral));
-				break;
-			case Verify::ConfirmationResults::TooManyAttempts:
-				event.reply(dpp::message("Too many attempts. Start again with /verify.")
-							.set_flags(dpp::m_ephemeral));
-				break;
-			}
-		}
-	});
-
-	bot.start(dpp::st_wait);
-
+	bot.Start();
 	return 0;
 }
-
-// TODO: timed removal of submissions, after leastmost submission set a 30 minute timer and after its over remove all submissions
+// TODO: timed removal of submissions, after least most submission set a 30 minute timer and after its over remove all submissions

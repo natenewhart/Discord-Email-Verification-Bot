@@ -1,4 +1,5 @@
 #include "Mailer.h"
+
 #include <print>
 #include <smtpclient/cpp/plaintextmessage.hpp>
 #include <smtpclient/cpp/forcedsecuresmtpclient.hpp>
@@ -6,10 +7,10 @@
 
 namespace Mailer
 {
-// ---------------------- IMailer ----------------------
+    // ---------------------- IMailer ----------------------
 
 
-// ---------------------- Console Mailer ----------------------
+    // ---------------------- Console Mailer ----------------------
 
 	SendResult Console::Send(const Email& message)
 	{

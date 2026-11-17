@@ -14,58 +14,61 @@
 
 #include <string>
 
-struct EmailMessage
+namespace Mailer
 {
-	std::string to; // Receiving email address
-	std::string subject;
-	std::string body;
-};
+	struct Email
+	{
+		std::string to; // Receiving email address
+		std::string subject;
+		std::string body;
+	};
 
-enum class SendStatus // Email send status results
-{
-	Pass,        // Successful send
-	UserError,   // Error from bad to address (receiving email address)
-	ServerError  // Server side error from host, from address, password, etc
-};
+	enum class SendStatus // Email send status results
+	{
+		Pass,        // Successful send
+		UserError,   // Error from bad to address (receiving email address)
+		ServerError  // Server side error from host, from address, password, etc
+	};
 
-struct EmailResult // Result of send function
-{
-	SendStatus  sendStatus;
-	std::string errorMessage;
-};
+	struct SendResult // Result of send function
+	{
+		SendStatus  sendStatus;
+		std::string errorMessage;
+	};
 
-class IMailer
-{
-public:
-	IMailer() = default;
-	virtual ~IMailer() = default;
+	class IMailer
+	{
+	public:
+		IMailer() = default;
+		virtual ~IMailer() = default;
 
-	virtual EmailResult Send(const EmailMessage& message) = 0; // Send email
-};
+		virtual SendResult Send(const Email& message) = 0; // Send email
+	};
 
-// Simple console mailer which prints email to console
-class ConsoleMailer : public IMailer
-{
-public:
-	EmailResult Send(const EmailMessage& message) override;
-};
+	// Simple console mailer which prints email to console
+	class Console : public IMailer
+	{
+	public:
+		SendResult Send(const Email& message) override;
+	};
 
-// TODO: move to new file because this uses a complete isolated library so should be isolated
-class SMTPMailer : public IMailer
-{
-public:
-	SMTPMailer(const std::string& host, unsigned int port, const std::string& username,
-			   const std::string& password, const std::string& displayName = "");
+	// TODO: move to new file because this uses a complete isolated library so should be isolated
+	class SMTP : public IMailer
+	{
+	public:
+		SMTP(const std::string& host, unsigned int port, const std::string& username,
+			 const std::string& password, const std::string& displayName = "");
 
-	EmailResult Send(const EmailMessage& message) override;
-private:
-	SendStatus ParseErrorNumber(int error) const; // Return correct send status based on SMTP error number
+		SendResult Send(const Email& message) override;
+	private:
+		SendStatus ParseErrorNumber(int error) const; // Return correct send status based on SMTP error number
 
-private:
-	unsigned int mPort;
-	std::string mHost;
-	std::string mUsername;
-	std::string mPassword;
-	std::string mDisplayName;
-};
+	private:
+		unsigned int mPort;
+		std::string mHost;
+		std::string mUsername;
+		std::string mPassword;
+		std::string mDisplayName;
+	};
+}
 

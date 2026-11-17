@@ -46,12 +46,12 @@
 #include "Verify.h"
 #include "Mailer.h"
 
-static inline EmailMessage makeEmail(std::string to, std::string code)
+static inline Mailer::Email makeEmail(std::string to, std::string code)
 {
-	EmailMessage email;
+	Mailer::Email email;
 	email.to      = to;
 	email.subject = "Discord Verification Code";
-	email.body    = "Your verification code is " + code;
+	email.body    = "Your verification code is " + code + "\nThis code expires in 3m.";
 	return email;
 }
 
@@ -61,7 +61,7 @@ int main()
 	if (!Env::load()) return -1; // Load environment variables from .env file
 	Verify verifier(Env::getVar("EMAIL_DOMAIN")); // Create an instance of the Verify class
 
-	SMTPMailer emailSender(Env::getVar("SMTP_HOST", "smtp.gmail.com"),
+	Mailer::SMTP emailSender(Env::getVar("SMTP_HOST", "smtp.gmail.com"),
 					  static_cast<unsigned int>(std::stoul(Env::getVar("SMTP_PORT", "587"))),
 					  Env::getVar("SMTP_USERNAME"),
 					  Env::getVar("SMTP_PASSWORD"),
@@ -81,15 +81,12 @@ int main()
 
 			dpp::slashcommand confirm("confirm", "Enter the code you received by email", bot.me.id);
 			confirm.add_option(dpp::command_option(dpp::co_string, "code", "The code from your email", true));
-			// TODO: code max length of 256 or whatever so no one sends mb of text through api
 
 			bot.guild_bulk_command_create({ verify, confirm }, // TODO: change this for official launch
 										  dpp::snowflake(Env::getVar("GUILD_ID")));
 		}
 	});
 	
-	// TODO: check if user is alreadyd verifed if they are they cant do it again
-	// TODO: add expires in 3m message on email
 	bot.on_slashcommand([&verifier, &emailSender, &bot](const dpp::slashcommand_t& event)
 	{
 		auto userId = event.command.usr.id;
@@ -103,9 +100,9 @@ int main()
 				event.thinking(true);
 
 				std::string verificationCode = verifier.GetVerificationCode(userId);
-				EmailResult emailResult      = emailSender.Send(makeEmail(userEmail, verificationCode));
+				Mailer::SendResult emailResult      = emailSender.Send(makeEmail(userEmail, verificationCode));
 
-				if (emailResult.sendStatus != SendStatus::Pass)
+				if (emailResult.sendStatus != Mailer::SendStatus::Pass)
 				{
 					event.edit_original_response(dpp::message(
 						"Check your inbox, then run /confirm <code>. If it doesn't arrive in a few minutes, "

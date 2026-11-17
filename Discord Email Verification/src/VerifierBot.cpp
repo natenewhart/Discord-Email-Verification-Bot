@@ -100,7 +100,7 @@ void VerifierBot::HandleConfirm(const dpp::slashcommand_t & event)
 
 	switch (mVerifier.ConfirmUser(userId, verificationCode))
 	{
-	case Verify::ConfirmationResults::Pass:
+	case Verify::ConfirmationResults::Pass: // TODO: add roll creation here for passing
 		event.reply(dpp::message("Confirmation successful!").set_flags(dpp::m_ephemeral));
 		break;
 	case Verify::ConfirmationResults::UserNotFound:

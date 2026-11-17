@@ -31,13 +31,19 @@
 * Successful verification leads to popup saying "You have been verified!" and the user is given the verified role
 *
 * TODO:
-* add guild config json which is updated with /config command and stored on disk for data per server
+* Add verify roll FIRST which updates when you are verified on said server
+* Add is verified check so no one can get verified twice
+* 
+* Add json data base per server
+* hash map store guildId -> server settings + MailerObject and the mailer object stores mailer specific data (SMTP variables etc)
+* This way each server can have a different IMailer object from there choosing, and store there variables on the stack
 *
+* 
 * // SECURITY TODO:
 * 1. timeouts for multiple users trying to verify at the same time. Prevents server attacks from tons of users trying to apply at the same time
 */
 
-#include <print> // TODO: remove all print includes
+#include <print> // TODO: remove all print includes in whole file and prinlns
 #include <iostream>
 #include <format>
 

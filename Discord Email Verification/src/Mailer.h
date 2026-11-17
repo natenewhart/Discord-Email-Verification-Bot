@@ -16,14 +16,22 @@
 
 struct EmailMessage
 {
-	std::string to; // Recieving email address
+	std::string to; // Receiving email address
 	std::string subject;
 	std::string body;
 };
 
-enum class SendStatus
+enum class SendStatus // Email send status results
 {
-	Pass
+	Pass,        // Successful send
+	UserError,   // Error from bad to address (receiving email address)
+	ServerError  // Server side error from host, from address, password, etc
+};
+
+struct EmailResult // Result of send function
+{
+	SendStatus  sendStatus;
+	std::string errorMessage;
 };
 
 class IMailer
@@ -32,20 +40,32 @@ public:
 	IMailer() = default;
 	virtual ~IMailer() = default;
 
-	virtual SendStatus Send(const EmailMessage& message) = 0; // Send email
-
+	virtual EmailResult Send(const EmailMessage& message) = 0; // Send email
 };
 
 // Simple console mailer which prints email to console
 class ConsoleMailer : public IMailer
 {
 public:
-	SendStatus Send(const EmailMessage& message) override;
+	EmailResult Send(const EmailMessage& message) override;
 };
 
+// TODO: move to new file because this uses a complete isolated library so should be isolated
 class SMTPMailer : public IMailer
 {
 public:
-	SendStatus Send(const EmailMessage& message) override;
+	SMTPMailer(const std::string& host, unsigned int port, const std::string& username,
+			   const std::string& password, const std::string& displayName = "");
+
+	EmailResult Send(const EmailMessage& message) override;
+private:
+	SendStatus ParseErrorNumber(int error) const; // Return correct send status based on SMTP error number
+
+private:
+	unsigned int mPort;
+	std::string mHost;
+	std::string mUsername;
+	std::string mPassword;
+	std::string mDisplayName;
 };
 

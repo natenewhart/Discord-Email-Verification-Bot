@@ -50,12 +50,12 @@ public:
 
 	// Clean Up
 	void RemoveExpiredSubmissions(); // Remove all users who have been in the system longer than allowed lifetime
+	bool RemoveUser(tUserId userId); // Remove user return true if user is removed
 
 private:
 	std::string GenerateRandomCode();
 
 	void AddUser(tUserId userId, const std::string& email); // Overwrite and add user
-	bool RemoveUser(tUserId userId); // Remove user return true if user is removed
 	bool RemoveUserFromQueue(tUserId userId); // Move item in queue to the back of the queue
 
 	SubmissionResults VerifyEmail(const std::string& email);

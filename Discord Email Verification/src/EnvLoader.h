@@ -72,7 +72,14 @@ std::string Env::getVar(const std::string& name)
 	std::string value;
 	if (!detail::tryGetVar(name.c_str(), value))
 	{
-		throw std::runtime_error("Environment variable not found: " + name);
+		try{ 
+			throw std::runtime_error("Environment variable not found: " + name);
+		}
+		// TODO: remove on release
+		catch (const std::runtime_error& err)
+		{
+			std::cout << "error: " << err.what() << std::endl;
+		}
 	}
 	return value;
 }

@@ -57,10 +57,15 @@ static inline EmailMessage makeEmail(std::string to, std::string code)
 
 int main()
 {
-	ConsoleMailer emailSender;
 
 	if (!Env::load()) return -1; // Load environment variables from .env file
 	Verify verifier(Env::getVar("EMAIL_DOMAIN")); // Create an instance of the Verify class
+
+	SMTPMailer emailSender(Env::getVar("SMTP_HOST", "smtp.gmail.com"),
+					  static_cast<unsigned int>(std::stoul(Env::getVar("SMTP_PORT", "587"))),
+					  Env::getVar("SMTP_USERNAME"),
+					  Env::getVar("SMTP_PASSWORD"),
+					  Env::getVar("DISPLAY_NAME", "Email Verifier"));
 
 	const std::string cBotToken = Env::getVar("BOT_TOKEN");
 
@@ -85,7 +90,7 @@ int main()
 	
 	// TODO: check if user is alreadyd verifed if they are they cant do it again
 	// TODO: add expires in 3m message on email
-	bot.on_slashcommand([&verifier, &emailSender](const dpp::slashcommand_t& event)
+	bot.on_slashcommand([&verifier, &emailSender, &bot](const dpp::slashcommand_t& event)
 	{
 		auto userId = event.command.usr.id;
 		if (event.command.get_command_name() == "verify")
@@ -95,10 +100,24 @@ int main()
 			{
 			case Verify::SubmissionResults::Pass:
 			{
+				event.thinking(true);
+
 				std::string verificationCode = verifier.GetVerificationCode(userId);
-				emailSender.Send(makeEmail(userEmail, verificationCode));
-				event.reply(dpp::message("Check your inbox, then run /confirm <code>.")
-							.set_flags(dpp::m_ephemeral)); // Hidden message only to user
+				EmailResult emailResult      = emailSender.Send(makeEmail(userEmail, verificationCode));
+
+				if (emailResult.sendStatus != SendStatus::Pass)
+				{
+					event.edit_original_response(dpp::message(
+						"Check your inbox, then run /confirm <code>. If it doesn't arrive in a few minutes, "
+						"check the spelling of your address and run /verify again."));
+				}
+				else
+				{
+					verifier.RemoveUser(userId);
+					bot.log(dpp::ll_error, "email send failed: " + emailResult.errorMessage);
+					event.edit_original_response(dpp::message(
+						"Couldn't send the email. Please try again later."));
+				}
 				break;
 			}
 			case Verify::SubmissionResults::CooldownFailure:
@@ -137,8 +156,6 @@ int main()
 			}
 		}
 	});
-
-	dpp::snowflake guildId = std::stoull(Env::getVar("GUILD_ID"));
 
 	bot.start(dpp::st_wait);
 

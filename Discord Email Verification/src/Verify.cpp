@@ -11,16 +11,18 @@ Verify::Verify(const std::vector<std::string>& domains)
 	: mcValidDomains(domains)
 {}
 
-Verify::SubmissionResults Verify::SubmitUser(tUserId userId, std::string email)
+Verify::SubmissionResults Verify::SubmitUser(tUserId userId, std::string email, std::string& outCode)
 {
-	RemoveExpiredSubmissions();
-	if (IsSubmitted(userId))
+	std::lock_guard<std::mutex> lock(mMutex);
+
+	RemoveExpiredSubmissionsLocked();
+	if (IsSubmittedLocked(userId))
 	{
 		auto now = std::chrono::steady_clock::now();
 		if (now - mUserIdToVerificationData[userId].timestamp < scSubmissionCooldown) // Cooldown failure
 			return SubmissionResults::CooldownFailure;
 		
-		RemoveUser(userId); // Overwrite user when they double submit
+		RemoveUserLocked(userId); // Overwrite user when they double submit
 	}
 
 	// TODO: email cooldown doesnt apply if verification doesnt work; cooldown is only applied if you successfully submitted
@@ -28,41 +30,43 @@ Verify::SubmissionResults Verify::SubmitUser(tUserId userId, std::string email)
 	auto emailResults = VerifyEmail(email);
 	if (emailResults != SubmissionResults::Pass) return emailResults; // Return error value from email verification
 
-	AddUser(userId, email);
+	AddUserLocked(userId, email);
+	outCode = mUserIdToVerificationData[userId].verificationCode;
 	return SubmissionResults::Pass;
 }
 
 Verify::ConfirmationResults Verify::ConfirmUser(tUserId userId, const std::string& code)
 {
-	RemoveExpiredSubmissions();
-	if (!IsSubmitted(userId)) return ConfirmationResults::UserNotFound; // User is not in system so fail
+	std::lock_guard<std::mutex> lock(mMutex);
+
+	RemoveExpiredSubmissionsLocked();
+	if (!IsSubmittedLocked(userId)) return ConfirmationResults::UserNotFound; // User is not in system so fail
 
 	std::string normCode = Verify::ToUpper(code);
 	if (mUserIdToVerificationData[userId].verificationCode == normCode)
 	{
-		RemoveUser(userId);
+		RemoveUserLocked(userId);
 		return ConfirmationResults::Pass;
 	}
 
 	mUserIdToVerificationData[userId].confirmationAttempts++;
 	if (mUserIdToVerificationData[userId].confirmationAttempts == scMaxConfirmationAttempts)
 	{
-		RemoveUser(userId);
+		RemoveUserLocked(userId);
 		return ConfirmationResults::TooManyAttempts;
 	}
 
 	return ConfirmationResults::WrongCode;
 }
 
-std::string Verify::GetVerificationCode(tUserId userId) const
+std::string Verify::GetVerificationCode(tUserId userId)
 {
-	// TODO: make this safe from calling when user is not in system
-	// uses .at() so code fails
-
+	// TODO: use at() or use [...].verificationCode? IF YOU SWITCH MAKE SURE TO USE MUTEX
+	std::lock_guard<std::mutex> lock(mMutex);
 	return mUserIdToVerificationData.at(userId).verificationCode; // Return the verification code for the user
 }
 
-bool Verify::IsSubmitted(tUserId userId) const
+bool Verify::IsSubmittedLocked(tUserId userId)
 {
 	return mUserIdToVerificationData.find(userId) != mUserIdToVerificationData.end();
 }
@@ -83,7 +87,7 @@ std::string Verify::GenerateRandomCode()
 	return std::format("{:0{}X}", bits, scCodeLength);
 }
 
-void Verify::RemoveExpiredSubmissions()
+void Verify::RemoveExpiredSubmissionsLocked()
 {
 	const auto now = std::chrono::steady_clock::now();
 
@@ -95,22 +99,28 @@ void Verify::RemoveExpiredSubmissions()
 	}
 }
 
-void Verify::AddUser(tUserId userId, const std::string& email)
+void Verify::AddUserLocked(tUserId userId, const std::string& email)
 {
 	auto code = GenerateRandomCode();
-	auto now = std::chrono::steady_clock::now();
+	auto now  = std::chrono::steady_clock::now();
 	int attempts = 0;
 	mUserIdToVerificationData[userId] = { email, code, attempts, now };
 	mTimeQueue.push_back({ userId, now }); // Timestamp queue
 }
 
-bool Verify::RemoveUser(tUserId userId)
+bool Verify::RemoveUserLocked(tUserId userId)
 {
-	if (!IsSubmitted(userId)) return false;
+	if (!IsSubmittedLocked(userId)) return false;
 
 	RemoveUserFromQueue(userId);
 	mUserIdToVerificationData.erase(userId); // Remove user from pending verification list;
 	return true;
+}
+
+bool Verify::RemoveUser(tUserId userId)
+{
+	std::lock_guard<std::mutex> lock(mMutex);
+	return RemoveUserLocked(userId);
 }
 
 bool Verify::RemoveUserFromQueue(tUserId userId)
@@ -126,7 +136,7 @@ bool Verify::RemoveUserFromQueue(tUserId userId)
 	return false;
 }
 
-Verify::SubmissionResults Verify::VerifyEmail(const std::string& email)
+Verify::SubmissionResults Verify::VerifyEmail(const std::string& email) const
 {
 	if (email.empty() || email.size() > scMaxEmailLength)
 		return SubmissionResults::EmailNameError;
@@ -177,7 +187,6 @@ std::string Verify::ToLower(std::string str)
 		c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 	return str;
 }
-
 
 void Verify::TrimString(std::string& str)
 {

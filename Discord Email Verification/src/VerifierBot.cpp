@@ -11,7 +11,6 @@ VerifierBot::VerifierBot()
 	, mVerifier(Env::getVar("EMAIL_DOMAIN"))
 {
 	mBot.on_log(dpp::utility::cout_logger());
-
 	mBot.on_ready([this](const dpp::ready_t& event) { OnReady(event); });
 	mBot.on_slashcommand([this](const dpp::slashcommand_t& event) { OnSlashCommand(event); });
 }
@@ -55,13 +54,13 @@ void VerifierBot::HandleVerify(const dpp::slashcommand_t& event)
 	auto userId = event.command.usr.id;
 	auto userEmail = std::get<std::string>(event.get_parameter("email"));
 
-	switch (mVerifier.SubmitUser(userId, userEmail))
+	std::string verificationCode = "fallback"; // Verification code given by SubmitUser
+	switch (mVerifier.SubmitUser(userId, userEmail, verificationCode))
 	{
 	case Verify::SubmissionResults::Pass:
 	{
 		event.thinking(true);
 
-		std::string verificationCode = mVerifier.GetVerificationCode(userId);
 		Mailer::SendResult emailResult = mMailer.Send(ConstructEmail(userEmail, verificationCode));
 
 		if (emailResult.sendStatus == Mailer::SendStatus::Pass)

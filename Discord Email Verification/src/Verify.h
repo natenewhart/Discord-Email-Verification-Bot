@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <queue>
+#include <mutex>
 
 class Verify
 {
@@ -41,24 +42,27 @@ public:
 	Verify(const std::vector<std::string>& domains); // Domain list construction
 
 	// Verification Pipeline
-	SubmissionResults SubmitUser(tUserId userId, std::string email); // Store user data and generate code for verification return true if user is not in system. If user is already in system return false and fail
+	SubmissionResults SubmitUser(tUserId userId, std::string email, std::string& outCode); // Store user data and generate code for verification return true if user is not in system. If user is already in system return false and fail
 	ConfirmationResults ConfirmUser(tUserId userId, const std::string& code); // Check if the provided code is correct and return true if passed
 	
 	// Getters
-	std::string GetVerificationCode(tUserId userId) const; // Get the verification code tied to userId
-	bool IsSubmitted(tUserId userId) const; // Has user been submitted but not confirmed
+	std::string GetVerificationCode(tUserId userId); // Get the verification code tied to userId
 
 	// Clean Up
-	void RemoveExpiredSubmissions(); // Remove all users who have been in the system longer than allowed lifetime
+
 	bool RemoveUser(tUserId userId); // Remove user return true if user is removed
 
 private:
+	bool IsSubmittedLocked(tUserId userId); // Has user been submitted but not confirmed [not thread safe]
 	std::string GenerateRandomCode();
 
-	void AddUser(tUserId userId, const std::string& email); // Overwrite and add user
+	void AddUserLocked(tUserId userId, const std::string& email); // Overwrite and add user [requires mutex lock before]
+
+	void RemoveExpiredSubmissionsLocked(); // Remove all users who have been in the system longer than allowed lifetime [requires mutex lock before]
+	bool RemoveUserLocked(tUserId userId); // Remove user return true if user is removed [requires mutex lock before]
 	bool RemoveUserFromQueue(tUserId userId); // Move item in queue to the back of the queue
 
-	SubmissionResults VerifyEmail(const std::string& email);
+	SubmissionResults VerifyEmail(const std::string& email) const;
 	bool IsValidDomain(std::string_view domain) const;
 
 	static std::string ToUpper(std::string str);
@@ -70,6 +74,7 @@ private:
 	std::unordered_map<tUserId, UserData> mUserIdToVerificationData; // Maps user IDs to their verification data
 	std::deque<QueueEntry> mTimeQueue; // Queue to track the order of user submissions for verification
 	const std::vector<std::string> mcValidDomains; // List of valid domains for bot
+	std::mutex mMutex;
 
 	// TODO: location of constexpr's maybe in nameesapce
 	static constexpr size_t scMaxEmailLength = 254; // Practical email length limit

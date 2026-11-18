@@ -23,7 +23,10 @@ private:
 
 	// Slash Commands
 	void HandleVerify(const dpp::slashcommand_t& event);
+	bool IsVerified(const dpp::guild_member& member) const;
+
 	void HandleConfirm(const dpp::slashcommand_t& event);
+	void AddVerifiedRole(const dpp::slashcommand_t& event);
 
 	static Mailer::Email ConstructEmail(std::string to, std::string code);
 

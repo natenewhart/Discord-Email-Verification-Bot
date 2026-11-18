@@ -54,6 +54,12 @@ void VerifierBot::HandleVerify(const dpp::slashcommand_t& event)
 	auto userId = event.command.usr.id;
 	auto userEmail = std::get<std::string>(event.get_parameter("email"));
 
+	if (IsVerified(event.command.member)) // Pass when user already has verified role
+	{
+		event.reply(dpp::message("You are already verified.")
+					.set_flags(dpp::m_ephemeral)); // Hidden message only to user
+	}
+
 	std::string verificationCode = "fallback"; // Verification code given by SubmitUser
 	switch (mVerifier.SubmitUser(userId, userEmail, verificationCode))
 	{
@@ -93,6 +99,12 @@ void VerifierBot::HandleVerify(const dpp::slashcommand_t& event)
 	}
 }
 
+bool VerifierBot::IsVerified(const dpp::guild_member& member) const
+{
+	const auto& roles = member.get_roles();
+	return std::find(roles.begin(), roles.end(), dpp::snowflake(Env::getVar("VERIFIED_ROLE_ID"))) != roles.end();
+}
+
 void VerifierBot::HandleConfirm(const dpp::slashcommand_t & event)
 {
 	auto userId = event.command.usr.id;
@@ -101,8 +113,11 @@ void VerifierBot::HandleConfirm(const dpp::slashcommand_t & event)
 	switch (mVerifier.ConfirmUser(userId, verificationCode))
 	{
 	case Verify::ConfirmationResults::Pass: // TODO: add roll creation here for passing
+	{
 		event.reply(dpp::message("Confirmation successful!").set_flags(dpp::m_ephemeral));
+		AddVerifiedRole(event);
 		break;
+	}
 	case Verify::ConfirmationResults::UserNotFound:
 		event.reply(dpp::message("No active code. Codes expire after 3 minutes, so use /verify to start over.")
 					.set_flags(dpp::m_ephemeral));
@@ -115,6 +130,26 @@ void VerifierBot::HandleConfirm(const dpp::slashcommand_t & event)
 					.set_flags(dpp::m_ephemeral));
 		break;
 	}
+}
+
+void VerifierBot::AddVerifiedRole(const dpp::slashcommand_t& event)
+{
+	auto userId = event.command.usr.id;
+	dpp::snowflake guildId = event.command.guild_id;
+	dpp::snowflake verifiedRoleId = Env::getVar("VERIFIED_ROLE_ID"); // Replace with your Role ID
+
+	mBot.guild_member_add_role(guildId, userId, verifiedRoleId, [event, this](const dpp::confirmation_callback_t& callback)
+	{
+		if (callback.is_error())
+		{
+			mBot.log(dpp::ll_error, "Failed to add role: " + callback.get_error().message);
+			//event.reply("Failed to add role: " + callback.get_error().message);
+		}
+		//else
+		//{
+		//	event.reply("Role added successfully!");
+		//}
+	});
 }
 
 // ------------------- Helpers -------------------

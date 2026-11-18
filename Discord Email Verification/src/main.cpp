@@ -35,8 +35,8 @@
 * Add is verified check so no one can get verified twice
 * 
 * Add json data base per server
-* hash map store guildId -> server settings + MailerObject and the mailer object stores mailer specific data (SMTP variables etc)
-* This way each server can have a different IMailer object from there choosing, and store there variables on the stack
+* hash map store guildId -> {server settings, MailerObject} and the mailer object stores mailer specific data (SMTP variables etc)
+* This way each server can have a different IMailer object from there choosing, and store their variables on the stack
 *
 * 
 * // SECURITY TODO:

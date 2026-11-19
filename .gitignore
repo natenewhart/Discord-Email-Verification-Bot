@@ -368,3 +368,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /external
 /Discord Email Verification/vcpkg_installed
+/Discord Email Verification/config.json

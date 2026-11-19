@@ -31,6 +31,7 @@ private:
 	void AddVerifiedRole(const dpp::slashcommand_t& event);
 
 	static Mailer::Email ConstructEmail(std::string to, std::string code);
+	const GuildRegistry::GuildData& GetGuild(dpp::snowflake id) const;
 
 private:
 	GuildRegistry mGuildData;

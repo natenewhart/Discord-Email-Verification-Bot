@@ -60,7 +60,7 @@ void VerifierBot::HandleVerify(const dpp::slashcommand_t& event)
 	}
 
 	std::string verificationCode = "fallback"; // Verification code given by SubmitUser
-	switch (mVerifier.SubmitUser(mGuildData.Get(event.command.guild_id).domains, userId, userEmail, verificationCode))
+	switch (mVerifier.SubmitUser(GetGuild(event.command.guild_id).domains, userId, userEmail, verificationCode))
 	{
 	case Verify::SubmissionResults::Pass:
 	{
@@ -101,7 +101,7 @@ void VerifierBot::HandleVerify(const dpp::slashcommand_t& event)
 bool VerifierBot::IsVerified(const dpp::guild_member& member) const
 {
 	const auto& roles = member.get_roles();
-	return std::find(roles.begin(), roles.end(), dpp::snowflake(Env::getVar("VERIFIED_ROLE_ID"))) != roles.end();
+	return std::find(roles.begin(), roles.end(), GetGuild(member.guild_id).verifiedRoleId) != roles.end();
 }
 
 void VerifierBot::HandleConfirm(const dpp::slashcommand_t & event)
@@ -135,7 +135,7 @@ void VerifierBot::AddVerifiedRole(const dpp::slashcommand_t& event)
 {
 	auto userId = event.command.usr.id;
 	dpp::snowflake guildId = event.command.guild_id;
-	dpp::snowflake verifiedRoleId = Env::getVar("VERIFIED_ROLE_ID"); // Replace with your Role ID
+	dpp::snowflake verifiedRoleId = GetGuild(guildId).verifiedRoleId; // Replace with your Role ID
 
 	mBot.guild_member_add_role(guildId, userId, verifiedRoleId, [event, this](const dpp::confirmation_callback_t& callback)
 	{
@@ -160,4 +160,9 @@ Mailer::Email VerifierBot::ConstructEmail(std::string to, std::string code)
 	email.subject = "Discord Verification Code";
 	email.body    = "Your verification code is " + code + "\nThis code expires in 3m.";
 	return email;
+}
+
+const GuildRegistry::GuildData& VerifierBot::GetGuild(dpp::snowflake id) const
+{
+	return mGuildData.Get(id);
 }

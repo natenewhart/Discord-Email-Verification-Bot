@@ -13,9 +13,17 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
 namespace Mailer
 {
+	enum class Type
+	{
+		Console,
+		SMTP
+	};
+	Type StringToType(std::string_view type); // Convert mailer type string to type [EX: "smtp" -> Type::SMTP]
+
 	struct Email
 	{
 		std::string to; // Receiving email address
@@ -42,14 +50,14 @@ namespace Mailer
 		IMailer() = default;
 		virtual ~IMailer() = default;
 
-		virtual SendResult Send(const Email& message) = 0; // Send email
+		virtual SendResult Send(const Email& message) const = 0; // Send email
 	};
 
 	// Simple console mailer which prints email to console
 	class Console : public IMailer
 	{
 	public:
-		SendResult Send(const Email& message) override;
+		SendResult Send(const Email& message) const override;
 	};
 
 	// TODO: move to new file because this uses a complete isolated library so should be isolated
@@ -59,7 +67,7 @@ namespace Mailer
 		SMTP(const std::string& host, unsigned int port, const std::string& username,
 			 const std::string& password, const std::string& displayName = "");
 
-		SendResult Send(const Email& message) override;
+		SendResult Send(const Email& message) const override;
 	private:
 		SendStatus ParseErrorNumber(int error) const; // Return correct send status based on SMTP error number
 

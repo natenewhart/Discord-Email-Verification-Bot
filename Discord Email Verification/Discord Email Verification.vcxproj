@@ -156,12 +156,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\GuildRegistry.cpp" />
     <ClCompile Include="src\Mailer.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Verify.cpp" />
     <ClCompile Include="src\VerifierBot.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\GuildRegistry.h" />
     <ClInclude Include="src\Mailer.h" />
     <ClInclude Include="src\EnvLoader.h" />
     <ClInclude Include="src\Verify.h" />

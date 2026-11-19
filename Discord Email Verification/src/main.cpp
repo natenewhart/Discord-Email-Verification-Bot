@@ -58,3 +58,38 @@ int main()
 	return 0;
 }
 // TODO: timed removal of submissions, after least most submission set a 30 minute timer and after its over remove all submissions
+
+int TestGuildRegistry()
+{
+    GuildRegistry gr;
+    if (!gr.GetStatus()) return -1; // Config load failure
+
+    const auto& guilds = gr.GetAll();
+
+    std::println("\n========== GUILD REGISTRY ==========");
+    std::println("Total Guilds: {}", guilds.size());
+
+    for (const auto& [guildId, guild] : guilds)
+    {
+        std::println("\n-----------------------------------");
+        std::println("Guild ID: {}", static_cast<uint64_t>(guildId));
+
+        std::println("Allowed Domains:");
+        for (const auto& domain : guild.domains)
+        {
+            std::println("  - {}", domain);
+        }
+
+        std::println("Verified Role ID: {}",
+                     static_cast<uint64_t>(guild.verifiedRoleId));
+
+        std::println("Mailer Type: {}",
+                     guild.mailerType == Mailer::Type::SMTP ? "SMTP" : "Console");
+
+        std::println("Mailer Initialized: {}",
+                     guild.mailer ? "Yes" : "No");
+    }
+
+    std::println("\n========== END REGISTRY ==========");
+    return 0;
+}

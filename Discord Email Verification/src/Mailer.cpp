@@ -1,18 +1,36 @@
 #include "Mailer.h"
 
 #include <print>
+#include <array>
 #include <smtpclient/cpp/plaintextmessage.hpp>
 #include <smtpclient/cpp/forcedsecuresmtpclient.hpp>
 #include <smtpclient/cpp/opportunisticsecuresmtpclient.hpp>
 
 namespace Mailer
 {
-    // ---------------------- IMailer ----------------------
+    // ---------------------- General ----------------------
+	namespace
+	{
+		constexpr std::array scStringToMailerType = // Static array map for "string" -> "Mailer::Type"
+		{
+			std::pair{std::string_view{"console"}, Mailer::Type::Console},
+			std::pair{std::string_view{"smtp"}, Mailer::Type::SMTP}
+		};
+	}
+	Type StringToType(std::string_view type)
+	{
+		for (const auto& [name, value] : scStringToMailerType)
+		{
+			if (name == type)
+				return value;
+		}
 
+		throw std::invalid_argument("Unknown mailer type: " + std::string(type));
+	}
 
     // ---------------------- Console Mailer ----------------------
 
-	SendResult Console::Send(const Email& message)
+	SendResult Console::Send(const Email& message) const
 	{
 		std::println("\nTo: {}\nSubject: {}\n\n{}", message.to, message.subject, message.body);
 		return { SendStatus::Pass, "" };
@@ -28,7 +46,7 @@ namespace Mailer
 		, mDisplayName(displayName)
 	{}
 
-	SendResult SMTP::Send(const Email& message)
+	SendResult SMTP::Send(const Email& message) const
 	{
 		using namespace jed_utils::cpp;
 		try

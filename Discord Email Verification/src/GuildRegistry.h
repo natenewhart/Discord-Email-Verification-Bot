@@ -36,6 +36,7 @@ private:
 private:
 	bool mFileStatus;
 	std::unordered_map<dpp::snowflake, GuildData> mGuildIdToConfigMap;
-	std::mutex mMutex; // Multiple servers & bot commands can access map, mutex for thread safety
+	//std::mutex mMutex; // Multiple servers & bot commands can access map, mutex for thread safety
+	// TODO: unused mutex, which will need to be activated when objects can edit the map, but for now its fine
 };
 

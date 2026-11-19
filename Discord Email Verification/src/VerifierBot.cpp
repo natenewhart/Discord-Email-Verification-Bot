@@ -1,14 +1,13 @@
 #include "VerifierBot.h"
 
 VerifierBot::VerifierBot()
-	: mStatus(Env::load())
+	: mStatus(Env::load() && mGuildData.GetStatus())
 	, mBot(Env::getVar("BOT_TOKEN"))
 	, mMailer(Env::getVar("SMTP_HOST", "smtp.gmail.com"),
 			  static_cast<unsigned int>(std::stoul(Env::getVar("SMTP_PORT", "587"))),
 			  Env::getVar("SMTP_USERNAME"),
 			  Env::getVar("SMTP_PASSWORD"),
 			  Env::getVar("DISPLAY_NAME", "Email Verifier"))
-	, mVerifier(Env::getVar("EMAIL_DOMAIN"))
 {
 	mBot.on_log(dpp::utility::cout_logger());
 	mBot.on_ready([this](const dpp::ready_t& event) { OnReady(event); });
@@ -61,7 +60,7 @@ void VerifierBot::HandleVerify(const dpp::slashcommand_t& event)
 	}
 
 	std::string verificationCode = "fallback"; // Verification code given by SubmitUser
-	switch (mVerifier.SubmitUser(userId, userEmail, verificationCode))
+	switch (mVerifier.SubmitUser(mGuildData.Get(event.command.guild_id).domains, userId, userEmail, verificationCode))
 	{
 	case Verify::SubmissionResults::Pass:
 	{

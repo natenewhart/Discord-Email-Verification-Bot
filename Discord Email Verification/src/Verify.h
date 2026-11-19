@@ -38,11 +38,10 @@ private:
 	};
 
 public:
-	Verify(const std::string& domain);               // Single domain construction
-	Verify(const std::vector<std::string>& domains); // Domain list construction
+	Verify() = default;
 
 	// Verification Pipeline
-	SubmissionResults SubmitUser(tUserId userId, std::string email, std::string& outCode); // Store user data and generate code for verification return true if user is not in system. If user is already in system return false and fail
+	SubmissionResults SubmitUser(const std::vector<std::string>& validDomains, tUserId userId, std::string email, std::string& outCode); // Store user data and generate code for verification return true if user is not in system. If user is already in system return false and fail
 	ConfirmationResults ConfirmUser(tUserId userId, const std::string& code); // Check if the provided code is correct and return true if passed
 	
 	// Getters
@@ -62,8 +61,8 @@ private:
 	bool RemoveUserLocked(tUserId userId); // Remove user return true if user is removed [requires mutex lock before]
 	bool RemoveUserFromQueue(tUserId userId); // Move item in queue to the back of the queue
 
-	SubmissionResults VerifyEmail(const std::string& email) const;
-	bool IsValidDomain(std::string_view domain) const;
+	SubmissionResults VerifyEmail(const std::vector<std::string>& validDomains, const std::string& email) const;
+	bool IsValidDomain(const std::vector<std::string>& validDomains, std::string_view domain) const;
 
 	static std::string ToUpper(std::string str);
 	static std::string ToLower(std::string str); // TODO: make these void and edit the string not copy
@@ -73,7 +72,6 @@ private:
 private:
 	std::unordered_map<tUserId, UserData> mUserIdToVerificationData; // Maps user IDs to their verification data
 	std::deque<QueueEntry> mTimeQueue; // Queue to track the order of user submissions for verification
-	const std::vector<std::string> mcValidDomains; // List of valid domains for bot
 	std::mutex mMutex;
 
 	// TODO: location of constexpr's maybe in nameesapce

@@ -3,15 +3,7 @@
 #include <print>
 #include <random>
 
-Verify::Verify(const std::string& domain)
-	: mcValidDomains{ domain }
-{}
-
-Verify::Verify(const std::vector<std::string>& domains)
-	: mcValidDomains(domains)
-{}
-
-Verify::SubmissionResults Verify::SubmitUser(tUserId userId, std::string email, std::string& outCode)
+Verify::SubmissionResults Verify::SubmitUser(const std::vector<std::string>& validDomains, tUserId userId, std::string email, std::string& outCode)
 {
 	std::lock_guard<std::mutex> lock(mMutex);
 
@@ -27,7 +19,7 @@ Verify::SubmissionResults Verify::SubmitUser(tUserId userId, std::string email, 
 
 	// TODO: email cooldown doesnt apply if verification doesnt work; cooldown is only applied if you successfully submitted
 	TrimString(email);
-	auto emailResults = VerifyEmail(email);
+	auto emailResults = VerifyEmail(validDomains, email);
 	if (emailResults != SubmissionResults::Pass) return emailResults; // Return error value from email verification
 
 	AddUserLocked(userId, email);
@@ -136,7 +128,7 @@ bool Verify::RemoveUserFromQueue(tUserId userId)
 	return false;
 }
 
-Verify::SubmissionResults Verify::VerifyEmail(const std::string& email) const
+Verify::SubmissionResults Verify::VerifyEmail(const std::vector<std::string>& validDomains, const std::string& email) const
 {
 	if (email.empty() || email.size() > scMaxEmailLength)
 		return SubmissionResults::EmailNameError;
@@ -159,15 +151,15 @@ Verify::SubmissionResults Verify::VerifyEmail(const std::string& email) const
 	std::string domain = email.substr(split + 1);
 	domain = ToLower(domain);
 
-	if (!IsValidDomain(domain))
+	if (!IsValidDomain(validDomains, domain))
 		return SubmissionResults::EmailDomainError; // Wrong domain
 
 	return SubmissionResults::Pass;
 }
 
-bool Verify::IsValidDomain(std::string_view domain) const
+bool Verify::IsValidDomain(const std::vector<std::string>& validDomains, std::string_view domain) const
 {
-	for (auto validDomain : mcValidDomains)
+	for (auto validDomain : validDomains)
 	{
 		if (domain == validDomain) return true;
 	}

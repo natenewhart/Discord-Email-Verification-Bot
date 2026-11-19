@@ -33,10 +33,10 @@ private:
 	static Mailer::Email ConstructEmail(std::string to, std::string code);
 
 private:
+	GuildRegistry mGuildData;
 	bool mStatus;
 	dpp::cluster mBot;
 	Verify mVerifier;
 	Mailer::SMTP mMailer;
-	GuildRegistry mGuildData;
 };
 
